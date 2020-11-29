@@ -15,11 +15,11 @@ Simple scheduler abstraction for paper/bungee plugins.
 
 ```xml
 	<dependencies>
-        <dependency>
-            <groupId>com.github.loperd</groupId>
-            <artifactId>scheduler</artifactId>
-            <version>Tag</version>
-        </dependency>
+		<dependency>
+		    <groupId>com.github.loperd</groupId>
+		    <artifactId>scheduler</artifactId>
+		    <version>Tag</version>
+		</dependency>
 	</dependencies>
 ```
 
