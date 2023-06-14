@@ -65,6 +65,7 @@
             <groupId>com.github.highcoremc</groupId>
             <artifactId>logger</artifactId>
             <version>0.1.1</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>
