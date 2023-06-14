@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>me.loper</groupId>
-    <artifactId>Scheduler</artifactId>
-    <version>1.0</version>
+    <artifactId>scheduler</artifactId>
+    <version>1.2</version>
     <packaging>jar</packaging>
 
-    <name>Scheduler</name>
+    <name>scheduler</name>
 
-    <description>Simple scheduler abstraction for paper/bungee plugins.</description>
+    <description>Simple scheduler abstraction for paper/spigot/bungee plugins.</description>
     <properties>
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -55,21 +55,16 @@
 
     <repositories>
         <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/groups/public/</url>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
         </repository>
     </repositories>
 
     <dependencies>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.10</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>30.0-jre</version>
+            <groupId>com.github.highcoremc</groupId>
+            <artifactId>logger</artifactId>
+            <version>0.1.1</version>
         </dependency>
     </dependencies>
 </project>
