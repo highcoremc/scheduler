@@ -61,16 +61,6 @@ public interface SchedulerAdapter {
     SchedulerTask asyncRepeating(Runnable task, long interval, TimeUnit unit);
 
     /**
-     * Executes the given task repeatedly sync at a given interval.
-     *
-     * @param task     the task
-     * @param interval the interval
-     * @param unit     the unit of interval
-     * @return the resultant task instance
-     */
-    SchedulerTask syncRepeating(Runnable task, long interval, TimeUnit unit);
-
-    /**
      * Shuts down the scheduler instance.
      *
      * <p>{@link #asyncLater(Runnable, long, TimeUnit)} and {@link #asyncRepeating(Runnable, long, TimeUnit)}.</p>
