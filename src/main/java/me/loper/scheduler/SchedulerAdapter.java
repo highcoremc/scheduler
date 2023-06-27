@@ -31,7 +31,7 @@ public interface SchedulerAdapter {
     };
 
     /**
-     * Executes a task async
+     * Executes a task async with result
      *
      * @param task the task
      */
@@ -40,11 +40,29 @@ public interface SchedulerAdapter {
     }
 
     /**
-     * Executes a task sync
+     * Executes a task sync with result
      *
      * @param task the task
      */
     default <V> SchedulerTask<V> executeSync(Callable<V> task) throws Exception {
+        return new SyncSchedulerTask<>(sync(task).call(), false, this.isInMainThread());
+    }
+
+    /**
+     * Executes a task async without result
+     *
+     * @param task the task
+     */
+    default SchedulerTask<?> executeAsync(Runnable task) throws Exception {
+        return new AsyncSchedulerTask<>(async(task).call(), false, this.isInMainThread());
+    }
+
+    /**
+     * Executes a task sync without result
+     *
+     * @param task the task
+     */
+    default SchedulerTask<?> executeSync(Runnable task) throws Exception {
         return new SyncSchedulerTask<>(sync(task).call(), false, this.isInMainThread());
     }
 
