@@ -119,6 +119,19 @@ public interface SchedulerAdapter {
     SchedulerTask<?> syncRepeating(Runnable task, long interval, TimeUnit unit);
 
     /**
+     * Executes the given task repeatedly async at a given interval with delay.
+     *
+     * @param task     the task
+     * @param delay    the delay
+     * @param interval the interval
+     * @param unit     the unit of interval
+     * @return the resultant task instance
+     */
+    SchedulerTask<?> delayedAsyncRepeating(Runnable task, long delay, long interval, TimeUnit unit);
+
+    SchedulerTask<?> delayedSyncRepeating(Runnable task, long delay, long interval, TimeUnit unit);
+
+    /**
      * Shuts down the scheduler instance.
      */
     void shutdown();

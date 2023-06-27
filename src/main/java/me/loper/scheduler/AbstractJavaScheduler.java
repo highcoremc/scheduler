@@ -81,23 +81,33 @@ public abstract class AbstractJavaScheduler implements SchedulerAdapter {
 
     @Override
     public SchedulerTask<?> syncRepeating(Runnable task, long interval, TimeUnit unit) {
-        return new SyncSchedulerTask<>(scheduleRepeating(interval, unit, this.async(task)), true, this.isInMainThread());
+        return new SyncSchedulerTask<>(scheduleRepeating(interval, 0L, unit, this.sync(task)), true, this.isInMainThread());
     }
 
     @Override
     public SchedulerTask<?> asyncRepeating(Runnable task, long interval, TimeUnit unit) {
-        return new AsyncSchedulerTask<>(scheduleRepeating(interval, unit, this.sync(task)), true, this.isInMainThread());
+        return new AsyncSchedulerTask<>(scheduleRepeating(interval, 0L, unit, this.async(task)), true, this.isInMainThread());
+    }
+
+    @Override
+    public SchedulerTask<?> delayedSyncRepeating(Runnable task, long delay, long interval, TimeUnit unit) {
+        return new SyncSchedulerTask<>(scheduleRepeating(interval, delay, unit, this.sync(task)), true, this.isInMainThread());
+    }
+
+    @Override
+    public SchedulerTask<?> delayedAsyncRepeating(Runnable task, long delay, long interval, TimeUnit unit) {
+        return new AsyncSchedulerTask<>(scheduleRepeating(interval, delay, unit, this.async(task)), true, this.isInMainThread());
     }
 
     @NotNull
-    private ScheduledFuture<?> scheduleRepeating(long interval, TimeUnit unit, Callable<Future<Object>> callable) {
+    private ScheduledFuture<?> scheduleRepeating(long interval, long delay, TimeUnit unit, Callable<Future<Object>> callable) {
         return this.scheduler.scheduleAtFixedRate(() -> {
             try {
                 callable.call().get();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }, interval, interval, unit);
+        }, delay, interval, unit);
     }
 
     @Override
