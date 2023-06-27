@@ -8,15 +8,12 @@ public class AsyncSchedulerTask<T> implements SchedulerTask<T> {
 
     private final Future<T> future;
     private final boolean repeatable;
+    private final boolean isInMainThread;
 
-    AsyncSchedulerTask(Future<T> future) {
-        this.future = future;
-        this.repeatable = false;
-    }
-
-    AsyncSchedulerTask(Future<T> future, boolean repeatable) {
+    AsyncSchedulerTask(Future<T> future, boolean repeatable, boolean isInMainThread) {
         this.future = future;
         this.repeatable = repeatable;
+        this.isInMainThread = isInMainThread;
     }
 
     @Override
@@ -31,8 +28,9 @@ public class AsyncSchedulerTask<T> implements SchedulerTask<T> {
 
     @Override
     public T await() throws ExecutionException, InterruptedException {
-
-        // check if this is main thread
+        if (this.isInMainThread) {
+            throw new RuntimeException("Await can't be called in the main thread, because it is blocks it.");
+        }
 
         return this.future.get();
     }

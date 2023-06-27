@@ -15,6 +15,8 @@ public interface SchedulerAdapter {
      */
     <V> Callable<Future<V>> async(Callable<V> callable);
 
+    boolean isInMainThread();
+
     /**
      * Gets a sync executor instance
      */
@@ -34,7 +36,7 @@ public interface SchedulerAdapter {
      * @param task the task
      */
     default <V> SchedulerTask<V> executeAsync(Callable<V> task) throws Exception {
-        return new AsyncSchedulerTask<>(async(task).call());
+        return new AsyncSchedulerTask<>(async(task).call(), false, this.isInMainThread());
     }
 
     /**
@@ -43,7 +45,7 @@ public interface SchedulerAdapter {
      * @param task the task
      */
     default <V> SchedulerTask<V> executeSync(Callable<V> task) throws Exception {
-        return new SyncSchedulerTask<>(sync(task).call());
+        return new SyncSchedulerTask<>(sync(task).call(), false, this.isInMainThread());
     }
 
     /**

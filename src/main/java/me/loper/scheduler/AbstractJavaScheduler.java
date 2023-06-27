@@ -13,8 +13,6 @@ import java.util.stream.Collectors;
  * Abstract implementation of {@link SchedulerAdapter} using a {@link ScheduledExecutorService}.
  */
 public abstract class AbstractJavaScheduler implements SchedulerAdapter {
-    private static final int PARALLELISM = 16;
-
     private final ScheduledThreadPoolExecutor scheduler;
     private final Logger logger;
     private final String schedulerName;
@@ -25,17 +23,32 @@ public abstract class AbstractJavaScheduler implements SchedulerAdapter {
             thread.setName(schedulerName);
             return thread;
         });
+
         this.logger = logger;
         this.schedulerName = schedulerName;
         this.scheduler.setRemoveOnCancelPolicy(true);
         this.scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     }
 
-    @Override
-    public <V> SchedulerTask<V> asyncLater(Callable<V> task, long delay, TimeUnit unit) {
-        ScheduledFuture<V> future = this.scheduler.schedule(() -> this.async(task).call().get(), delay, unit);
+    abstract protected Executor asyncExecutor();
 
-        return new AsyncSchedulerTask<>(future);
+    @Override
+    public <V> Callable<Future<V>> async(Callable<V> callable) {
+        return () -> {
+            CompletableFuture<V> future = new CompletableFuture<>();
+
+            this.asyncExecutor().execute(() -> {
+                try {
+                    future.complete(callable.call());
+                } catch (Throwable ex) {
+                    this.logger.severe("Error while executing async task", ex);
+
+                    future.completeExceptionally(ex);
+                }
+            });
+
+            return future;
+        };
     }
 
     @Override
@@ -43,17 +56,24 @@ public abstract class AbstractJavaScheduler implements SchedulerAdapter {
         ScheduledFuture<V> future = this.scheduler.schedule(
                 () -> this.sync(task).call().get(), delay, unit);
 
-        return new SyncSchedulerTask<>(future);
+        return new SyncSchedulerTask<>(future, false, this.isInMainThread());
     }
 
     @Override
-    public SchedulerTask<?> asyncRepeating(Runnable task, long interval, TimeUnit unit) {
-        return new AsyncSchedulerTask<>(scheduleRepeating(interval, unit, this.sync(task)), true);
+    public <V> SchedulerTask<V> asyncLater(Callable<V> task, long delay, TimeUnit unit) {
+        ScheduledFuture<V> future = this.scheduler.schedule(() -> this.async(task).call().get(), delay, unit);
+
+        return new AsyncSchedulerTask<>(future, false, this.isInMainThread());
     }
 
     @Override
     public SchedulerTask<?> syncRepeating(Runnable task, long interval, TimeUnit unit) {
-        return new SyncSchedulerTask<>(scheduleRepeating(interval, unit, this.async(task)), true);
+        return new SyncSchedulerTask<>(scheduleRepeating(interval, unit, this.async(task)), true, this.isInMainThread());
+    }
+
+    @Override
+    public SchedulerTask<?> asyncRepeating(Runnable task, long interval, TimeUnit unit) {
+        return new AsyncSchedulerTask<>(scheduleRepeating(interval, unit, this.sync(task)), true, this.isInMainThread());
     }
 
     @NotNull
