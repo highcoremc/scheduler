@@ -1,6 +1,7 @@
 package me.loper.scheduler;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -28,15 +29,6 @@ public interface SchedulerAdapter {
 
     default Callable<Future<Object>> sync(Runnable runnable) {
         return this.sync(Executors.callable(runnable));
-    };
-
-    /**
-     * Executes a task async with result
-     *
-     * @param task the task
-     */
-    default <V> SchedulerTask<V> executeAsync(Callable<V> task) throws Exception {
-        return new AsyncSchedulerTask<>(async(task).call(), false, this.isInMainThread());
     }
 
     /**
@@ -44,17 +36,17 @@ public interface SchedulerAdapter {
      *
      * @param task the task
      */
-    default <V> SchedulerTask<V> executeSync(Callable<V> task) throws Exception {
-        return new SyncSchedulerTask<>(sync(task).call(), false, this.isInMainThread());
+    default <V> SchedulerTask<V> executeSync(Callable<V> task) {
+        return new SyncSchedulerTask<>(futureFromCallable(sync(task)), false, this.isInMainThread());
     }
 
     /**
-     * Executes a task async without result
+     * Executes a task async with result
      *
      * @param task the task
      */
-    default SchedulerTask<?> executeAsync(Runnable task) throws Exception {
-        return new AsyncSchedulerTask<>(async(task).call(), false, this.isInMainThread());
+    default <V> SchedulerTask<V> executeAsync(Callable<V> task) {
+        return new AsyncSchedulerTask<>(futureFromCallable(async(task)), false, this.isInMainThread());
     }
 
     /**
@@ -62,8 +54,32 @@ public interface SchedulerAdapter {
      *
      * @param task the task
      */
-    default SchedulerTask<?> executeSync(Runnable task) throws Exception {
-        return new SyncSchedulerTask<>(sync(task).call(), false, this.isInMainThread());
+    default SchedulerTask<?> executeSync(Runnable task) {
+        return new SyncSchedulerTask<>(futureFromCallable(sync(task)), false, this.isInMainThread());
+    }
+
+    /**
+     * Executes a task async without result
+     *
+     * @param task the task
+     */
+    default SchedulerTask<?> executeAsync(Runnable task) {
+        return new AsyncSchedulerTask<>(futureFromCallable(async(task)), false, this.isInMainThread());
+    }
+
+    static <V> Future<V> futureFromCallable(Callable<Future<V>> callable) {
+        Future<V> future;
+
+        try {
+            future = callable.call();
+        } catch (Exception ex) {
+            CompletableFuture<V> completableFuture = new CompletableFuture<>();
+            completableFuture.completeExceptionally(ex);
+
+            future = completableFuture;
+        }
+
+        return future;
     }
 
     /**
