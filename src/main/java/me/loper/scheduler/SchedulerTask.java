@@ -1,8 +1,5 @@
 package me.loper.scheduler;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
 public interface SchedulerTask <T> {
 
     boolean isRepeatable();
@@ -10,6 +7,8 @@ public interface SchedulerTask <T> {
     boolean isAsync();
 
     T await();
+
+    T await(boolean force);
 
     /**
      * Cancels the task.

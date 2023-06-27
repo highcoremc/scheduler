@@ -31,12 +31,21 @@ public class SyncSchedulerTask<T> implements SchedulerTask<T> {
 
     @Override
     public T await() {
+        return this.await(false);
+    }
+
+    @Override
+    public T await(boolean force) {
+        if (force) {
+            throw new IllegalArgumentException("Force does not supported in the sync scheduler task.");
+        }
+
         try {
             return this.isInMainThread
-                    ? this.future.get(150, TimeUnit.MILLISECONDS)
+                    ? this.future.get(200, TimeUnit.MILLISECONDS)
                     : this.future.get();
         } catch (TimeoutException ex) {
-            throw new RuntimeException("Await can't be called in the main thread, because it is blocks it.", ex);
+            throw new RuntimeException("Await blocks the main thread.", ex);
         } catch (InterruptedException | ExecutionException ex) {
             throw new RuntimeException(ex);
         }

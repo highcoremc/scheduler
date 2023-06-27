@@ -28,7 +28,12 @@ public class AsyncSchedulerTask<T> implements SchedulerTask<T> {
 
     @Override
     public T await() {
-        if (this.isInMainThread) {
+        return this.await(false);
+    }
+
+    @Override
+    public T await(boolean force) {
+        if (!force && this.isInMainThread) {
             throw new RuntimeException("Await can't be called in the main thread, because it is blocks it.");
         }
 
