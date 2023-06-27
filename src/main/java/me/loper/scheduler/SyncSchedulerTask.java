@@ -30,12 +30,16 @@ public class SyncSchedulerTask<T> implements SchedulerTask<T> {
     }
 
     @Override
-    public T await() throws ExecutionException, InterruptedException, TimeoutException {
+    public T await() {
         if (this.isInMainThread) {
             throw new RuntimeException("Await can't be called in the main thread, because it is blocks it.");
         }
 
-        return this.future.get(50, TimeUnit.MILLISECONDS);
+        try {
+            return this.future.get(50, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override

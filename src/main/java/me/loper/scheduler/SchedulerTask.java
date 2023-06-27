@@ -9,7 +9,7 @@ public interface SchedulerTask <T> {
 
     boolean isAsync();
 
-    T await() throws ExecutionException, InterruptedException, TimeoutException;
+    T await();
 
     /**
      * Cancels the task.
