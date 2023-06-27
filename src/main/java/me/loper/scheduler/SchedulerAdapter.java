@@ -1,6 +1,8 @@
 package me.loper.scheduler;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -10,25 +12,29 @@ public interface SchedulerAdapter {
 
     /**
      * Gets an async executor instance
-     *
-     * @return an async executor instance
      */
-    Executor async();
+    <V> Callable<Future<V>> async(Callable<V> callable);
 
     /**
      * Gets a sync executor instance
-     *
-     * @return a sync executor instance
      */
-    Executor sync();
+    <V> Callable<Future<V>> sync(Callable<V> callable);
+
+    default Callable<Future<Object>> async(Runnable runnable) {
+        return this.async(Executors.callable(runnable));
+    }
+
+    default Callable<Future<Object>> sync(Runnable runnable) {
+        return this.sync(Executors.callable(runnable));
+    };
 
     /**
      * Executes a task async
      *
      * @param task the task
      */
-    default void executeAsync(Runnable task) {
-        async().execute(task);
+    default <V> SchedulerTask<V> executeAsync(Callable<V> task) throws Exception {
+        return new AsyncSchedulerTask<>(async(task).call());
     }
 
     /**
@@ -36,8 +42,8 @@ public interface SchedulerAdapter {
      *
      * @param task the task
      */
-    default void executeSync(Runnable task) {
-        sync().execute(task);
+    default <V> SchedulerTask<V> executeSync(Callable<V> task) throws Exception {
+        return new SyncSchedulerTask<>(sync(task).call());
     }
 
     /**
@@ -48,7 +54,9 @@ public interface SchedulerAdapter {
      * @param unit  the unit of delay
      * @return the resultant task instance
      */
-    SchedulerTask asyncLater(Runnable task, long delay, TimeUnit unit);
+    <V> SchedulerTask<V> asyncLater(Callable<V> task, long delay, TimeUnit unit);
+
+    <V> SchedulerTask<V> syncLater(Callable<V> task, long delay, TimeUnit unit);
 
     /**
      * Executes the given task repeatedly async at a given interval.
@@ -58,20 +66,13 @@ public interface SchedulerAdapter {
      * @param unit     the unit of interval
      * @return the resultant task instance
      */
-    SchedulerTask asyncRepeating(Runnable task, long interval, TimeUnit unit);
+    SchedulerTask<?> asyncRepeating(Runnable task, long interval, TimeUnit unit);
+
+    SchedulerTask<?> syncRepeating(Runnable task, long interval, TimeUnit unit);
 
     /**
      * Shuts down the scheduler instance.
-     *
-     * <p>{@link #asyncLater(Runnable, long, TimeUnit)} and {@link #asyncRepeating(Runnable, long, TimeUnit)}.</p>
      */
-    void shutdownScheduler();
-
-    /**
-     * Shuts down the executor instance.
-     *
-     * <p>{@link #async()} and {@link #executeAsync(Runnable)}.</p>
-     */
-    void shutdownExecutor();
+    void shutdown();
 
 }

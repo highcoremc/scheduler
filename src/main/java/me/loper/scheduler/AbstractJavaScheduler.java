@@ -1,12 +1,12 @@
 package me.loper.scheduler;
 
 import me.loper.logger.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.function.Predicate;
 
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -16,7 +16,6 @@ public abstract class AbstractJavaScheduler implements SchedulerAdapter {
     private static final int PARALLELISM = 16;
 
     private final ScheduledThreadPoolExecutor scheduler;
-    private final ForkJoinPool worker;
     private final Logger logger;
     private final String schedulerName;
 
@@ -30,45 +29,50 @@ public abstract class AbstractJavaScheduler implements SchedulerAdapter {
         this.schedulerName = schedulerName;
         this.scheduler.setRemoveOnCancelPolicy(true);
         this.scheduler.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-        this.worker = new ForkJoinPool(PARALLELISM, new WorkerThreadFactory(schedulerName), new ExceptionHandler(), false);
     }
 
     @Override
-    public Executor async() {
-        return this.worker;
+    public <V> SchedulerTask<V> asyncLater(Callable<V> task, long delay, TimeUnit unit) {
+        ScheduledFuture<V> future = this.scheduler.schedule(() -> this.async(task).call().get(), delay, unit);
+
+        return new AsyncSchedulerTask<>(future);
     }
 
     @Override
-    public SchedulerTask asyncLater(Runnable task, long delay, TimeUnit unit) {
-        ScheduledFuture<?> future = this.scheduler.schedule(() -> this.worker.execute(task), delay, unit);
-        return () -> future.cancel(false);
+    public <V> SchedulerTask<V> syncLater(Callable<V> task, long delay, TimeUnit unit) {
+        ScheduledFuture<V> future = this.scheduler.schedule(
+                () -> this.sync(task).call().get(), delay, unit);
+
+        return new SyncSchedulerTask<>(future);
     }
 
     @Override
-    public SchedulerTask asyncRepeating(Runnable task, long interval, TimeUnit unit) {
-        ScheduledFuture<?> future = this.scheduler.scheduleAtFixedRate(() -> this.worker.execute(task), interval, interval, unit);
-        return () -> future.cancel(false);
+    public SchedulerTask<?> asyncRepeating(Runnable task, long interval, TimeUnit unit) {
+        return new AsyncSchedulerTask<>(scheduleRepeating(interval, unit, this.sync(task)), true);
     }
 
     @Override
-    public void shutdownScheduler() {
+    public SchedulerTask<?> syncRepeating(Runnable task, long interval, TimeUnit unit) {
+        return new SyncSchedulerTask<>(scheduleRepeating(interval, unit, this.async(task)), true);
+    }
+
+    @NotNull
+    private ScheduledFuture<?> scheduleRepeating(long interval, TimeUnit unit, Callable<Future<Object>> callable) {
+        return this.scheduler.scheduleAtFixedRate(() -> {
+            try {
+                callable.call().get();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, interval, interval, unit);
+    }
+
+    @Override
+    public void shutdown() {
         this.scheduler.shutdown();
         try {
             if (!this.scheduler.awaitTermination(1, TimeUnit.MINUTES)) {
                 reportRunningTasks(thread -> thread.getName().equals(this.schedulerName));
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void shutdownExecutor() {
-        this.worker.shutdown();
-        try {
-            if (!this.worker.awaitTermination(1, TimeUnit.MINUTES)) {
-                this.logger.severe("Timed out waiting for the " + this.schedulerName + " worker thread pool to terminate");
-                reportRunningTasks(thread -> thread.getName().startsWith(schedulerName + "-"));
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -83,29 +87,5 @@ public abstract class AbstractJavaScheduler implements SchedulerAdapter {
                 );
             }
         });
-    }
-
-    private static final class WorkerThreadFactory implements ForkJoinPool.ForkJoinWorkerThreadFactory {
-        private static final AtomicInteger COUNT = new AtomicInteger(0);
-        private final String threadName;
-
-        WorkerThreadFactory(String threadName) {
-            this.threadName = threadName;
-        }
-
-        @Override
-        public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-            ForkJoinWorkerThread thread = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-            thread.setDaemon(true);
-            thread.setName(this.threadName + "-" + COUNT.getAndIncrement());
-            return thread;
-        }
-    }
-
-    private final class ExceptionHandler implements Thread.UncaughtExceptionHandler {
-        @Override
-        public void uncaughtException(Thread t, Throwable e) {
-            AbstractJavaScheduler.this.logger.warn("Thread " + t.getName() + " threw an uncaught exception", e);
-        }
     }
 }
