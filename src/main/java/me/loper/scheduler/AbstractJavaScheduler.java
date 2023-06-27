@@ -53,8 +53,7 @@ public abstract class AbstractJavaScheduler implements SchedulerAdapter {
 
     @Override
     public <V> SchedulerTask<V> syncLater(Callable<V> task, long delay, TimeUnit unit) {
-        ScheduledFuture<V> future = this.scheduler.schedule(
-                () -> this.sync(task).call().get(), delay, unit);
+        ScheduledFuture<V> future = this.scheduler.schedule(() -> this.sync(task).call().get(), delay, unit);
 
         return new SyncSchedulerTask<>(future, false, this.isInMainThread());
     }
@@ -62,6 +61,20 @@ public abstract class AbstractJavaScheduler implements SchedulerAdapter {
     @Override
     public <V> SchedulerTask<V> asyncLater(Callable<V> task, long delay, TimeUnit unit) {
         ScheduledFuture<V> future = this.scheduler.schedule(() -> this.async(task).call().get(), delay, unit);
+
+        return new AsyncSchedulerTask<>(future, false, this.isInMainThread());
+    }
+
+    @Override
+    public SchedulerTask<?> syncLater(Runnable task, long delay, TimeUnit unit) {
+        ScheduledFuture<?> future = this.scheduler.schedule(() -> this.sync(task).call().get(), delay, unit);
+
+        return new SyncSchedulerTask<>(future, false, this.isInMainThread());
+    }
+
+    @Override
+    public SchedulerTask<?> asyncLater(Runnable task, long delay, TimeUnit unit) {
+        ScheduledFuture<?> future = this.scheduler.schedule(() -> this.async(task).call().get(), delay, unit);
 
         return new AsyncSchedulerTask<>(future, false, this.isInMainThread());
     }

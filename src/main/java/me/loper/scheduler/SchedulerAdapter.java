@@ -83,7 +83,7 @@ public interface SchedulerAdapter {
     }
 
     /**
-     * Executes the given task with a delay.
+     * Executes the given task with a delay and returns result.
      *
      * @param task  the task
      * @param delay the delay
@@ -93,6 +93,18 @@ public interface SchedulerAdapter {
     <V> SchedulerTask<V> asyncLater(Callable<V> task, long delay, TimeUnit unit);
 
     <V> SchedulerTask<V> syncLater(Callable<V> task, long delay, TimeUnit unit);
+
+    /**
+     * Executes the given task with a delay without result.
+     *
+     * @param task  the task
+     * @param delay the delay
+     * @param unit  the unit of delay
+     * @return the resultant task instance
+     */
+    SchedulerTask<?> asyncLater(Runnable task, long delay, TimeUnit unit);
+
+    SchedulerTask<?> syncLater(Runnable task, long delay, TimeUnit unit);
 
     /**
      * Executes the given task repeatedly async at a given interval.
