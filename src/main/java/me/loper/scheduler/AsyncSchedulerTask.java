@@ -10,7 +10,7 @@ public class AsyncSchedulerTask<T> implements SchedulerTask<T> {
     private final boolean repeatable;
     private final boolean isInMainThread;
 
-    AsyncSchedulerTask(Future<T> future, boolean repeatable, boolean isInMainThread) {
+    public AsyncSchedulerTask(Future<T> future, boolean repeatable, boolean isInMainThread) {
         this.future = future;
         this.repeatable = repeatable;
         this.isInMainThread = isInMainThread;
